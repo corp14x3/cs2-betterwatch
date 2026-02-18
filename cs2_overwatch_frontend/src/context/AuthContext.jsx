@@ -8,15 +8,34 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Kaydedilmiş kullanıcıyı kontrol et
+    const saved = localStorage.getItem('user')
+    if (saved) {
+      setUser(JSON.parse(saved))
+    }
+    
     api.get('/auth/me')
-      .then(res => setUser(res.data))
-      .catch(() => setUser(null))
+      .then(res => {
+        setUser(res.data)
+        if (localStorage.getItem('rememberMe') === 'true') {
+          localStorage.setItem('user', JSON.stringify(res.data))
+        }
+      })
+      .catch(() => {
+        localStorage.removeItem('user')
+        localStorage.removeItem('rememberMe')
+        setUser(null)
+      })
       .finally(() => setLoading(false))
   }, [])
 
   const login = async (email, password, rememberMe) => {
     const res = await api.post('/auth/login', { email, password, remember_me: rememberMe })
     setUser(res.data)
+    if (rememberMe) {
+      localStorage.setItem('user', JSON.stringify(res.data))
+      localStorage.setItem('rememberMe', 'true')
+    }
     return res.data
   }
 
@@ -27,6 +46,8 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     await api.post('/auth/logout')
+    localStorage.removeItem('user')
+    localStorage.removeItem('rememberMe')
     setUser(null)
   }
 

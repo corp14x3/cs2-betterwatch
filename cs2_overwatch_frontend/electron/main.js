@@ -36,9 +36,6 @@ function createWindow() {
   win.webContents.on('did-finish-load', () => {
     console.log('Loaded successfully')
   })
-  
-  // Geçici olarak devtools aç
-  win.webContents.openDevTools()
 }
 
 app.whenReady().then(() => {
