@@ -91,7 +91,7 @@ async def upload_demo(
         if not existing.scalar_one_or_none():
             from services.steam import get_ban_count_from_url
             ban_count = await get_ban_count_from_url(acc_url)
-            db.add(Reported(reported_acc=acc_url, account_bans=ban_count, report_from_ids=[]))
+            db.add(Reported(reported_acc=acc_url, account_bans=ban_count))
 
     demo = Demo(
         demo_id        = demo_id,

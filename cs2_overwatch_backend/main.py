@@ -60,7 +60,7 @@ app.add_middleware(
     secret_key    = SECRET_KEY,
     max_age       = SESSION_EXPIRE * 60,
     https_only    = False,   # set True in production
-    same_site     = "lax",
+    same_site     = "none",
 )
 
 app.add_middleware(

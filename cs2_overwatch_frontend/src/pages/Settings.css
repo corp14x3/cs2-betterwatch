@@ -124,6 +124,35 @@
   white-space: nowrap;
 }
 
+/* ── Language ── */
+.lang-group {
+  display: flex;
+  gap: 8px;
+}
+
+.lang-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 8px 20px;
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  transition: all 0.15s;
+}
+
+.lang-btn:hover {
+  border-color: rgba(0,200,255,0.3);
+  color: var(--text);
+}
+
+.lang-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+}
+
 /* ── Logout ── */
 .btn-logout {
   background: none;

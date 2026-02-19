@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import api from '../api/client'
 import './Leaderboard.css'
 
 export default function Leaderboard() {
+  const { t } = useTranslation()
   const [period, setPeriod]   = useState('weekly')
   const [rows, setRows]       = useState([])
   const [loading, setLoading] = useState(true)
@@ -26,26 +28,22 @@ export default function Leaderboard() {
     <div className="lb-page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">SIRA LİSTESİ</h1>
-          <p className="page-sub">En çok ban yedirten oyuncular</p>
+          <h1 className="page-title">{t('leaderboard.title')}</h1>
+          <p className="page-sub">{t('leaderboard.subtitle')}</p>
         </div>
         <div className="period-group">
           {['weekly','monthly','yearly'].map(p => (
-            <button
-              key={p}
-              className={`sort-btn ${period === p ? 'active' : ''}`}
-              onClick={() => setPeriod(p)}
-            >
-              {p === 'weekly' ? 'HAFTALIK' : p === 'monthly' ? 'AYLIK' : 'YILLIK'}
+            <button key={p} className={`sort-btn ${period === p ? 'active' : ''}`} onClick={() => setPeriod(p)}>
+              {t(`leaderboard.${p}`)}
             </button>
           ))}
         </div>
       </div>
 
       {loading ? (
-        <div className="demos-loading"><span className="mono">// yükleniyor...</span></div>
+        <div className="demos-loading"><span className="mono">{t('leaderboard.loading')}</span></div>
       ) : rows.length === 0 ? (
-        <div className="demos-empty"><span className="mono">// henüz veri yok</span></div>
+        <div className="demos-empty"><span className="mono">{t('leaderboard.empty')}</span></div>
       ) : (
         <div className="lb-list">
           {rows.map((row, i) => (
@@ -65,7 +63,7 @@ export default function Leaderboard() {
               </div>
               <div className="lb-bans">
                 <span className="lb-ban-count">{row.ban_count}</span>
-                <span className="lb-ban-label">BAN</span>
+                <span className="lb-ban-label">{t('leaderboard.bans')}</span>
               </div>
             </div>
           ))}
@@ -78,6 +76,7 @@ export default function Leaderboard() {
 }
 
 function ProfileModal({ userId, onClose }) {
+  const { t } = useTranslation()
   const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -92,11 +91,11 @@ function ProfileModal({ userId, onClose }) {
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal profile-modal">
         <div className="modal-header">
-          <h2 className="modal-title">PROFİL</h2>
+          <h2 className="modal-title">{t('leaderboard.profile_title')}</h2>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
         {loading ? (
-          <div className="mono" style={{color:'var(--text-dim)',fontSize:13}}>// yükleniyor...</div>
+          <div className="mono" style={{color:'var(--text-dim)',fontSize:13}}>{t('leaderboard.loading')}</div>
         ) : data && (
           <>
             <div className="profile-top">
@@ -106,29 +105,23 @@ function ProfileModal({ userId, onClose }) {
               }
               <div>
                 <div className="profile-nick">{data.nick}</div>
-                <div className="profile-rank mono">{data.rank || 'Rütbesiz'} · LVL {data.user_lvl}</div>
+                <div className="profile-rank mono">{data.rank || t('leaderboard.unranked')} · LVL {data.user_lvl}</div>
               </div>
             </div>
-
             {data.badges?.length > 0 && (
               <div className="profile-section">
-                <div className="profile-section-title mono">// rozetler</div>
+                <div className="profile-section-title mono">{t('leaderboard.badges')}</div>
                 <div className="profile-badges">
-                  {data.badges.map((b,i) => (
-                    <div key={i} className="profile-badge">{b.rank_name}</div>
-                  ))}
+                  {data.badges.map((b,i) => <div key={i} className="profile-badge">{b.rank_name}</div>)}
                 </div>
               </div>
             )}
-
             {data.banned_accs?.length > 0 && (
               <div className="profile-section">
-                <div className="profile-section-title mono">// banned from you ({data.banned_accs.length})</div>
+                <div className="profile-section-title mono">{t('leaderboard.banned_from')} ({data.banned_accs.length})</div>
                 <div className="profile-banned-list">
                   {data.banned_accs.map(url => (
-                    <a key={url} href={url} target="_blank" rel="noreferrer" className="suspect-url">
-                      {url}
-                    </a>
+                    <a key={url} href={url} target="_blank" rel="noreferrer" className="suspect-url">{url}</a>
                   ))}
                 </div>
               </div>

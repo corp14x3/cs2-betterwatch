@@ -1,11 +1,11 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import Login from './pages/Login'
-import Demos from './pages/Demos'
-import DownloadedDemos from './pages/DownloadedDemos'
-import Leaderboard from './pages/Leaderboard'
-import Settings from './pages/Settings'
-import Layout from './components/Layout'
+import Login from './pages/Login.jsx'
+import Demos from './pages/Demos.jsx'
+import DownloadedDemos from './pages/DownloadedDemos.jsx'
+import Leaderboard from './pages/Leaderboard.jsx'
+import Settings from './pages/Settings.jsx'
+import Layout from './components/Layout.jsx'
 import './index.css'
 
 function PrivateRoute({ children }) {

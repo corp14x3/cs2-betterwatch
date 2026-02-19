@@ -4,6 +4,25 @@ const fs = require('fs')
 const { Menu } = require('electron')
 const isDev = !app.isPackaged
 
+const CREDS_PATH = path.join(app.getPath('userData'), 'creds.json')
+
+ipcMain.handle('save-credentials', (_, { email, password }) => {
+  fs.writeFileSync(CREDS_PATH, JSON.stringify({ email, password }))
+  return true
+})
+
+ipcMain.handle('get-credentials', () => {
+  try { return JSON.parse(fs.readFileSync(CREDS_PATH, 'utf-8')) }
+  catch { return null }
+})
+
+ipcMain.handle('clear-credentials', () => {
+  if (fs.existsSync(CREDS_PATH)) fs.unlinkSync(CREDS_PATH)
+  return true
+})
+
+
+
 function createWindow() {
   Menu.setApplicationMenu(null)
   const win = new BrowserWindow({
@@ -36,14 +55,41 @@ function createWindow() {
   win.webContents.on('did-finish-load', () => {
     console.log('Loaded successfully')
   })
+
+  // F12 ile DevTools aç/kapat
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'F12') {
+      if (win.webContents.isDevToolsOpened()) {
+        win.webContents.closeDevTools()
+      } else {
+        win.webContents.openDevTools()
+      }
+    }
+  })
 }
 
 app.whenReady().then(() => {
-  // Cookie'lerin localhost'a gönderilmesine izin ver
   const { session } = require('electron')
+
+  // Cookie'lerin localhost'a gönderilmesine izin ver
   session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
     callback({ requestHeaders: { ...details.requestHeaders } })
   })
+
+  // HTTPS cookie'leri Electron'da çalıştır
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    const headers = { ...details.responseHeaders }
+    if (headers['set-cookie']) {
+      headers['set-cookie'] = headers['set-cookie'].map(cookie => {
+        if (!cookie.includes('SameSite')) {
+          cookie += '; SameSite=None; Secure'
+        }
+        return cookie
+      })
+    }
+    callback({ responseHeaders: headers })
+  })
+
   createWindow()
 })
 
@@ -79,12 +125,10 @@ ipcMain.handle('save-settings', (_, data) => {
 ipcMain.handle('save-demo', async (_, { fileName, buffer }) => {
   const settings = loadSettings()
   const replaysPath = settings.replaysPath
-
   if (!replaysPath) throw new Error('Replays path ayarlanmamış')
   if (!fs.existsSync(replaysPath)) throw new Error('Replays klasörü bulunamadı')
-
   const filePath = path.join(replaysPath, fileName)
-  fs.writeFileSync(filePath, Buffer.from(buffer))
+  fs.writeFileSync(filePath, Buffer.from(buffer))  // main.js'te Buffer kullanmak güvenli
   return filePath
 })
 

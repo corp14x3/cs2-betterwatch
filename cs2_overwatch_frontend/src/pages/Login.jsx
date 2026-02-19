@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useTranslation } from 'react-i18next'
 import './Login.css'
 
 export default function Login() {
   const { login, register } = useAuth()
+  const { t } = useTranslation()
   const navigate = useNavigate()
 
-  const [mode, setMode] = useState('login')   // 'login' | 'register'
-  const [form, setForm] = useState({ email: '', nick: '', password: '' })
+  const [mode, setMode]       = useState('login')
+  const [form, setForm]       = useState({ email: '', nick: '', password: '' })
   const [rememberMe, setRememberMe] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError]     = useState('')
   const [loading, setLoading] = useState(false)
 
   const handle = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }))
@@ -26,10 +28,10 @@ export default function Login() {
       } else {
         await register(form.email, form.nick, form.password)
         setMode('login')
-        setError('Kayıt başarılı! Giriş yapabilirsin.')
+        setError(t('login.success'))
       }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Bir hata oluştu.')
+      setError(err.response?.data?.detail || t('login.error'))
     } finally {
       setLoading(false)
     }
@@ -37,100 +39,57 @@ export default function Login() {
 
   return (
     <div className="login-root">
-      {/* Arka plan efektleri */}
       <div className="login-bg">
         <div className="login-bg-grid" />
         <div className="login-bg-glow" />
         <div className="login-bg-scanline" />
       </div>
-
       <div className="login-card">
-        {/* Logo / Başlık */}
         <div className="login-header">
           <div className="login-logo">
             <span className="login-logo-icon">⊛</span>
           </div>
-          <h1 className="login-title">CS2 BETTERWATCH</h1>
-          <p className="login-subtitle">Community Ban Tracker</p>
+          <h1 className="login-title">{t('login.title')}</h1>
+          <p className="login-subtitle">{t('login.subtitle')}</p>
         </div>
 
-        {/* Tab */}
         <div className="login-tabs">
-          <button
-            className={`login-tab ${mode === 'login' ? 'active' : ''}`}
-            onClick={() => { setMode('login'); setError('') }}
-          >
-            GİRİŞ
+          <button className={`login-tab ${mode === 'login' ? 'active' : ''}`} onClick={() => { setMode('login'); setError('') }}>
+            {t('login.tab_login')}
           </button>
-          <button
-            className={`login-tab ${mode === 'register' ? 'active' : ''}`}
-            onClick={() => { setMode('register'); setError('') }}
-          >
-            KAYIT
+          <button className={`login-tab ${mode === 'register' ? 'active' : ''}`} onClick={() => { setMode('register'); setError('') }}>
+            {t('login.tab_register')}
           </button>
         </div>
 
-        {/* Form */}
         <form className="login-form" onSubmit={submit}>
           <div className="login-field">
-            <label>E-POSTA</label>
-            <input
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handle}
-              placeholder="ornek@email.com"
-              required
-              autoComplete="email"
-            />
+            <label>{t('login.email')}</label>
+            <input name="email" type="email" value={form.email} onChange={handle} placeholder="example@email.com" required autoComplete="email" />
           </div>
-
           {mode === 'register' && (
             <div className="login-field">
-              <label>KULLANICI ADI</label>
-              <input
-                name="nick"
-                type="text"
-                value={form.nick}
-                onChange={handle}
-                placeholder="nickname"
-                required
-              />
+              <label>{t('login.username')}</label>
+              <input name="nick" type="text" value={form.nick} onChange={handle} placeholder="nickname" required />
             </div>
           )}
-
           <div className="login-field">
-            <label>ŞİFRE</label>
-            <input
-              name="password"
-              type="password"
-              value={form.password}
-              onChange={handle}
-              placeholder="••••••••"
-              required
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            />
+            <label>{t('login.password')}</label>
+            <input name="password" type="password" value={form.password} onChange={handle} placeholder="••••••••" required autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
           </div>
-
           {mode === 'login' && (
             <label className="login-remember">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={e => setRememberMe(e.target.checked)}
-              />
-              <span>Beni Hatırla</span>
+              <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} />
+              <span>{t('login.remember_me')}</span>
             </label>
           )}
-
           {error && (
-            <p className={`login-error ${error.includes('başarılı') ? 'success' : ''}`}>
+            <p className={`login-error ${error.includes('success') || error.includes('başarılı') || error.includes('успешна') ? 'success' : ''}`}>
               {error}
             </p>
           )}
-
           <button className="login-submit" type="submit" disabled={loading}>
-            {loading ? 'BEKLENİYOR...' : mode === 'login' ? 'GİRİŞ YAP' : 'KAYIT OL'}
+            {loading ? t('login.loading') : mode === 'login' ? t('login.btn_login') : t('login.btn_register')}
           </button>
         </form>
       </div>

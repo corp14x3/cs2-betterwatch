@@ -4,37 +4,50 @@ import api from '../api/client'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
+  const [user, setUser]     = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Kaydedilmiş kullanıcıyı kontrol et
-    const saved = localStorage.getItem('user')
-    if (saved) {
-      setUser(JSON.parse(saved))
-    }
-    
-    api.get('/auth/me')
-      .then(res => {
+    const tryAutoLogin = async () => {
+      try {
+        // Önce mevcut session'ı dene
+        const res = await api.get('/auth/me')
         setUser(res.data)
-        if (localStorage.getItem('rememberMe') === 'true') {
-          localStorage.setItem('user', JSON.stringify(res.data))
+      } catch {
+        // Session yoksa kayıtlı credentials ile otomatik login dene
+        try {
+          const creds = window.electron
+            ? await window.electron.getCredentials()
+            : JSON.parse(localStorage.getItem('creds') || 'null')
+
+          if (creds?.email && creds?.password) {
+            const res = await api.post('/auth/login', {
+              email: creds.email,
+              password: creds.password,
+              remember_me: true,
+            })
+            setUser(res.data)
+          }
+        } catch {
+          setUser(null)
         }
-      })
-      .catch(() => {
-        localStorage.removeItem('user')
-        localStorage.removeItem('rememberMe')
-        setUser(null)
-      })
-      .finally(() => setLoading(false))
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    tryAutoLogin()
   }, [])
 
   const login = async (email, password, rememberMe) => {
     const res = await api.post('/auth/login', { email, password, remember_me: rememberMe })
     setUser(res.data)
     if (rememberMe) {
-      localStorage.setItem('user', JSON.stringify(res.data))
-      localStorage.setItem('rememberMe', 'true')
+      if (window.electron) {
+        await window.electron.saveCredentials(email, password)
+      } else {
+        localStorage.setItem('creds', JSON.stringify({ email, password }))
+      }
     }
     return res.data
   }
@@ -46,8 +59,11 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     await api.post('/auth/logout')
-    localStorage.removeItem('user')
-    localStorage.removeItem('rememberMe')
+    if (window.electron) {
+      await window.electron.clearCredentials()
+    } else {
+      localStorage.removeItem('creds')
+    }
     setUser(null)
   }
 

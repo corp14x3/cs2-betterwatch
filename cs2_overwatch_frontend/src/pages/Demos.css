@@ -205,6 +205,33 @@
 }
 .btn-report:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* ── Progress Bar ── */
+.progress-container {
+  padding: 0 18px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.progress-wrap {
+  background: rgba(0,200,255,0.08);
+  border: 1px solid var(--border);
+  height: 4px;
+  width: 100%;
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s ease;
+  box-shadow: 0 0 8px rgba(0,200,255,0.5);
+}
+.progress-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+}
+
 /* ── Modal ── */
 .modal-overlay {
   position: fixed;
