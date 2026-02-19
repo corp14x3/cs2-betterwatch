@@ -2,6 +2,11 @@
 
 A community-driven ban tracker for CS2. Upload match demos, report suspicious players, and track who gets banned. Earn XP and climb the leaderboard by successfully getting cheaters banned.
 
+## Footage
+![Footage1](footage/1.png)
+![Footage2](footage/2.png)
+![Footage3](footage/3.png)
+![Footage4](footage/4.png)
 ## Features
 
 - 📁 **Demo Sharing** — Upload and download CS2 demo files from the community
