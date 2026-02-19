@@ -12,7 +12,21 @@ export default function DownloadedDemos() {
     setLoading(true)
     try {
       const res = await api.get('/demos/my/downloaded')
-      setDemos(res.data)
+      const list = res.data
+
+      // Her demo için local dosya var mı kontrol et
+      if (window.electron) {
+        const settings = await window.electron.getSettings()
+        const replaysPath = settings.replaysPath || ''
+        const checked = await Promise.all(list.map(async demo => {
+          const filePath = `${replaysPath}\\${demo.demo_id}.dem`
+          const exists = replaysPath ? await window.electron.fileExists(filePath) : false
+          return { ...demo, localExists: exists, localPath: filePath }
+        }))
+        setDemos(checked)
+      } else {
+        setDemos(list.map(d => ({ ...d, localExists: false })))
+      }
     } catch (e) {
       console.error(e)
     } finally {
@@ -27,19 +41,25 @@ export default function DownloadedDemos() {
       alert(t('downloaded.no_electron'))
       return
     }
-    const settings = await window.electron.getSettings()
-    if (!settings.replaysPath) {
-      alert(t('downloaded.no_path'))
-      return
+    if (demo.localExists) {
+      await window.electron.deleteDemo(demo.localPath)
     }
-    const filePath = `${settings.replaysPath}\\${demo.demo_id}.dem`
-    const deleted  = await window.electron.deleteDemo(filePath)
-    if (deleted) {
-      setDemos(d => d.filter(x => x.demo_id !== demo.demo_id))
-    } else {
-      alert(t('downloaded.not_found'))
-      setDemos(d => d.filter(x => x.demo_id !== demo.demo_id))
-    }
+    // DB'deki kaydı silmiyoruz, sadece local dosyayı sildik
+    // Listeyi yenile
+    fetchDemos()
+  }
+
+  const report = (url) => {
+  let profileUrl
+  if (url.includes('/profiles/')) {
+    const steamId = url.split('/profiles/').pop().replace(/\/$/, '')
+    profileUrl = `https://steamcommunity.com/profiles/${steamId}`
+  } else {
+    profileUrl = url
+  }
+  window.electron
+    ? window.electron.openExternal(profileUrl)
+    : window.open(profileUrl, '_blank')
   }
 
   return (
@@ -71,11 +91,33 @@ export default function DownloadedDemos() {
                       <span className="demo-stat-icon">◎</span>
                       {demo.demo_accs?.length || 0} {t('downloaded.suspects')}
                     </span>
+                    <span className={`demo-stat ${demo.localExists ? 'stat-ok' : 'stat-missing'}`}>
+                      {demo.localExists ? '● LOCAL' : '○ SİLİNMİŞ'}
+                    </span>
                   </div>
                   <div className="demo-card-actions">
-                    <button className="btn-delete" onClick={() => handleDelete(demo)}>{t('downloaded.delete')}</button>
+                    {demo.localExists && (
+                      <button className="btn-delete" onClick={() => handleDelete(demo)}>
+                        {t('downloaded.delete')}
+                      </button>
+                    )}
                   </div>
                 </div>
+
+                {/* Şüpheliler + Report */}
+                {demo.demo_accs?.length > 0 && (
+                  <div className="demo-suspects">
+                    <div className="suspects-title mono">// suspect accounts</div>
+                    {demo.demo_accs.map(url => (
+                      <div key={url} className="suspect-row">
+                        <a href={url} target="_blank" rel="noreferrer" className="suspect-url">{url}</a>
+                        <button className="btn-report" onClick={() => report(url)}>
+                          {t('demos.report')}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )
           })}

@@ -9,12 +9,17 @@ export default function Demos() {
   const [loading, setLoading]       = useState(true)
   const [sortBy, setSortBy]         = useState('upload_timestamp')
   const [showUpload, setShowUpload] = useState(false)
+  const [downloadedIds, setDownloadedIds] = useState(new Set())
 
   const fetchDemos = async () => {
     setLoading(true)
     try {
-      const res = await api.get('/demos/', { params: { sort_by: sortBy, order: 'desc', limit: 50 } })
-      setDemos(res.data)
+      const [demosRes, dlRes] = await Promise.all([
+        api.get('/demos/', { params: { sort_by: sortBy, order: 'desc', limit: 50 } }),
+        api.get('/demos/my/downloaded').catch(() => ({ data: [] }))
+      ])
+      setDemos(demosRes.data)
+      setDownloadedIds(new Set(dlRes.data.map(d => d.demo_id)))
     } catch (e) {
       console.error(e)
     } finally {
@@ -47,7 +52,13 @@ export default function Demos() {
       ) : (
         <div className="demos-list">
           {demos.map(demo => (
-            <DemoCard key={demo.demo_id} demo={demo} onReport={fetchDemos} />
+            <DemoCard
+              key={demo.demo_id}
+              demo={demo}
+              onReport={fetchDemos}
+              isDownloaded={downloadedIds.has(demo.demo_id)}
+              onDownloaded={() => setDownloadedIds(s => new Set([...s, demo.demo_id]))}
+            />
           ))}
         </div>
       )}
@@ -57,15 +68,14 @@ export default function Demos() {
   )
 }
 
-function DemoCard({ demo, onReport }) {
+function DemoCard({ demo, onReport, isDownloaded, onDownloaded }) {
   const { t } = useTranslation()
   const [expanded, setExpanded]     = useState(false)
-  const [reported, setReported]     = useState({})
-  const [reporting, setReporting]   = useState(null)
   const [dlProgress, setDlProgress] = useState(null)
   const date = new Date(demo.upload_timestamp).toLocaleDateString()
 
   const handleDownload = async () => {
+    if (isDownloaded) return
     try {
       setDlProgress(0)
       const res = await api.get(`/demos/${demo.demo_id}/download`, {
@@ -74,10 +84,9 @@ function DemoCard({ demo, onReport }) {
           if (e.total) setDlProgress(Math.round((e.loaded / e.total) * 100))
         }
       })
-    
       const fileName = `${demo.demo_id}.dem`
       if (window.electron) {
-        await window.electron.saveDemo(fileName, res.data)  // ← direkt arraybuffer gönder
+        await window.electron.saveDemo(fileName, res.data)
       } else {
         const blob = new Blob([res.data])
         const url  = URL.createObjectURL(blob)
@@ -85,24 +94,12 @@ function DemoCard({ demo, onReport }) {
         a.href = url; a.download = fileName; a.click()
         URL.revokeObjectURL(url)
       }
+      onDownloaded()
       onReport()
     } catch (e) {
       alert(t('demos.download_error') + ': ' + (e.response?.data?.detail || e.message))
     } finally {
       setDlProgress(null)
-    }
-  }
-
-  const report = async (url) => {
-    setReporting(url)
-    try {
-      await api.post(`/demos/${demo.demo_id}/report`, { steam_url: url })
-      setReported(r => ({ ...r, [url]: true }))
-      onReport()
-    } catch (e) {
-      alert(e.response?.data?.detail || t('demos.report_error'))
-    } finally {
-      setReporting(null)
     }
   }
 
@@ -123,13 +120,16 @@ function DemoCard({ demo, onReport }) {
               {expanded ? t('demos.hide') : t('demos.show_suspects')}
             </button>
           )}
-          <button className="btn-primary" onClick={handleDownload} disabled={dlProgress !== null}>
-            {dlProgress !== null ? `↓ ${dlProgress}%` : t('demos.download')}
+          <button
+            className={`btn-primary ${isDownloaded ? 'downloaded' : ''}`}
+            onClick={handleDownload}
+            disabled={isDownloaded || dlProgress !== null}
+          >
+            {isDownloaded ? '✓ İNDİRİLDİ' : dlProgress !== null ? `↓ ${dlProgress}%` : t('demos.download')}
           </button>
         </div>
       </div>
 
-      {/* Download Progress */}
       {dlProgress !== null && (
         <div className="progress-container">
           <div className="progress-wrap">
@@ -139,20 +139,12 @@ function DemoCard({ demo, onReport }) {
         </div>
       )}
 
-      {/* Suspects */}
       {expanded && demo.demo_accs?.length > 0 && (
         <div className="demo-suspects">
           <div className="suspects-title mono">{t('demos.suspect_accounts')}</div>
           {demo.demo_accs.map(url => (
             <div key={url} className="suspect-row">
               <a href={url} target="_blank" rel="noreferrer" className="suspect-url">{url}</a>
-              <button
-                className={`btn-report ${reported[url] ? 'reported' : ''}`}
-                disabled={!!reported[url] || reporting === url}
-                onClick={() => report(url)}
-              >
-                {reported[url] ? t('demos.reported') : reporting === url ? '...' : t('demos.report')}
-              </button>
             </div>
           ))}
         </div>
@@ -222,7 +214,6 @@ function UploadModal({ onClose, onSuccess }) {
           </div>
         </div>
 
-        {/* Upload Progress */}
         {loading && (
           <div className="progress-container">
             <div className="progress-wrap">

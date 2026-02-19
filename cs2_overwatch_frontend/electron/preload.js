@@ -9,4 +9,6 @@ contextBridge.exposeInMainWorld('electron', {
   saveCredentials: (email, password) => ipcRenderer.invoke('save-credentials', { email, password }),
   getCredentials:  ()            => ipcRenderer.invoke('get-credentials'),
   clearCredentials: ()           => ipcRenderer.invoke('clear-credentials'),
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
+  fileExists: (filePath) => ipcRenderer.invoke('file-exists', filePath),
 })

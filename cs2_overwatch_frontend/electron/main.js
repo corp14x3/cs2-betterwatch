@@ -20,7 +20,12 @@ ipcMain.handle('clear-credentials', () => {
   if (fs.existsSync(CREDS_PATH)) fs.unlinkSync(CREDS_PATH)
   return true
 })
-
+ipcMain.handle('open-external', (_, url) => {
+  shell.openExternal(url)
+})
+ipcMain.handle('file-exists', (_, filePath) => {
+  return fs.existsSync(filePath)
+})
 
 
 function createWindow() {

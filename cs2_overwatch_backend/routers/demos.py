@@ -188,3 +188,12 @@ async def report_account(
 
     await db.commit()
     return {"detail": "Reported successfully"}
+
+
+
+@router.get("/resolve/{steam_url:path}")
+async def resolve_steam_url(steam_url: str):
+    steam64 = await get_steam64_from_url(steam_url)
+    if not steam64:
+        raise HTTPException(400, "Steam URL çözümlenemedi")
+    return { "steam64": steam64 }
